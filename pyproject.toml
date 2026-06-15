@@ -1,0 +1,30 @@
+[project]
+name = "tethys-agents-workshop"
+version = "0.1.0"
+description = "TethysDash + tethys-agents + geoglows-summit-plugin-example workshop scaffold"
+requires-python = ">=3.10,<3.13"
+
+# Base Python deps tethys-platform pulls in (or that the workshop image needs
+# on top). Plugin-specific deps (intake, pandas, geoglows, statsmodels, etc.)
+# come transitively from geoglows-summit-plugin-example's own pyproject.toml
+# when it's installed -e in the Dockerfile.
+dependencies = [
+    "channels",
+    "channels-redis",
+    "psycopg2-binary",
+    "django>=4.2,<6",
+    "uvicorn[standard]",
+    "pyyaml",
+    "jinja2",
+    "django-bootstrap5",
+    "django-model-utils",
+    "django-guardian",
+    "social-auth-app-django<5.5",
+    "django-termsandconditions",
+    "django-cookie-consent",
+    "django-json-widget",
+    "djangorestframework-simplejwt",
+    "sqlalchemy==1.*",
+    "requests>=2.32.4,<3",
+    "tornado>=6.5,<7",
+]

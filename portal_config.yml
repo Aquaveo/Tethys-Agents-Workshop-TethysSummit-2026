@@ -1,0 +1,64 @@
+# TethysDash portal config for the workshop.
+#
+# Customizations vs. the stock tethys gen portal_config output:
+#   * AGENT_PLUGIN_PACKAGES — registers the workshop plugin as a runner source
+#   * AGENT_MODEL           — default LLM (env-overridable)
+#   * OLLAMA_HOST           — points at the ollama compose service
+#   * SQLite persistent store under /home/tethys/persist (no Postgres needed)
+
+# yamllint disable rule:line-length
+
+version: 1.0
+
+apps:
+  tethysdash:
+    PERSISTENT_STORES:
+      primary_db:
+        URL: sqlite:////home/tethys/persist/tethysdash_primary.sqlite
+        SPATIAL: false
+    SETTINGS:
+      # Consumed by the chat controller (controllers.py:1180) AND by the
+      # tethysdash chat CLI (cli.py:194). The plugin must expose a RUNNERS
+      # dict at <pkg>.agent — geoglows_summit_example.agent.__init__.py does.
+      AGENT_PLUGIN_PACKAGES:
+        - geoglows_summit_example
+      # Optional default runner (CLI --runner overrides). The plugin exposes
+      # "single" and "multi" — see geoglows_summit_example/agent/__init__.py.
+      AGENT_RUNNER: multi
+      # Default model. Override per-invocation with `tethysdash chat --model X`
+      # or via the AGENT_MODEL env var in docker-compose.yml.
+      AGENT_MODEL: qwen3:8b
+      # Ollama backend — compose-internal DNS reaches the ollama service.
+      OLLAMA_HOST: http://ollama:11434
+      # Tool packages consumed by the chat controller (NOT the CLI runner
+      # discovery, which uses AGENT_PLUGIN_PACKAGES above).
+      AGENT_TOOL_PACKAGES:
+        - tethysapp.tethysdash
+        - geoglows_summit_example
+
+settings:
+  SECRETS:
+    SECRET_KEY: tethys-agents-workshop-dev-only-NOT-FOR-PROD
+  STATIC_ROOT: /home/tethys/persist/static
+  MEDIA_ROOT: /home/tethys/persist/media
+  TETHYS_WORKSPACES_ROOT: /home/tethys/persist/workspaces
+
+  DEBUG: true
+  ALLOWED_HOSTS:
+    - "*"
+
+  # SQLite for the platform-level DB too — keeps the workshop dependency-light
+  # (no Postgres container needed). Production deployments swap this for PG.
+  DATABASES:
+    default:
+      ENGINE: django.db.backends.sqlite3
+      NAME: /home/tethys/persist/tethys_platform.sqlite
+
+  LOGGING:
+    handlers:
+      console:
+        level: INFO
+
+  CHANNEL_LAYERS:
+    default:
+      BACKEND: channels.layers.InMemoryChannelLayer

@@ -1,0 +1,89 @@
+# tethys-agents-workshop — two services on the default compose bridge network.
+#
+#   tethysdash  — Django + the editable plugin. Bound to 127.0.0.1:8000.
+#   ollama      — LLM backend. Bound to 127.0.0.1:11434.
+#
+# Service-to-service: tethysdash reaches Ollama at http://ollama:11434
+# (compose-internal DNS). Browser/laptop reaches tethysdash at
+# http://localhost:8000 and Ollama at http://localhost:11434.
+#
+# Bind-mount strategy: ./repos/<name>/ on the host shadows the editable
+# install paths inside the image. The image's `uv pip install -e` recorded
+# absolute paths under /workspaces — the bind-mount preserves those paths,
+# so participant edits in ./repos/geoglows-summit-plugin-example/ are
+# imported by Python with no rebuild. Django's dev server auto-reloads on
+# .py change.
+
+name: tethys-agents-workshop
+
+services:
+  tethysdash:
+    image: tethys-agents-workshop:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TETHYSDASH_REF: ${TETHYSDASH_REF:-feat/agent-tool-packages}
+        TETHYS_AGENTS_REF: ${TETHYS_AGENTS_REF:-main}
+        GEOGLOWS_REF: ${GEOGLOWS_REF:-main}
+    container_name: tethys-agents-workshop-tethysdash
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      # Editable workshop repos — same paths as the image's `-e` install.
+      # Edits on the host hot-reload inside the container.
+      - ./repos/tethysapp-tethys_dash:/workspaces/tethysapp-tethys_dash
+      - ./repos/tethys-agents:/workspaces/tethys-agents
+      - ./repos/geoglows-summit-plugin-example:/workspaces/geoglows-summit-plugin-example
+      # Preserve init.sh's idempotence marker + SQLite DB across restarts.
+      - tethys-persist:/home/tethys/persist
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      # Pointed at the ollama service by compose-internal DNS. The portal_config
+      # baked into the image references this same URL.
+      OLLAMA_HOST: "http://ollama:11434"
+      AGENT_MODEL: "${AGENT_MODEL:-qwen3:8b}"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: tethys-agents-workshop-ollama
+    volumes:
+      # Models live here — ~5 GB for qwen3:8b, survives container restarts.
+      - ollama-models:/root/.ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    healthcheck:
+      # `ollama list` returns 200 once the server is accepting requests.
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+    # ----------------------------------------------------------------------
+    # GPU opt-in: uncomment the deploy block below if the workshop host has
+    # an NVIDIA GPU + nvidia-container-toolkit installed. CPU-only is the
+    # safer default for participant laptops.
+    # ----------------------------------------------------------------------
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+volumes:
+  tethys-persist:
+    name: tethys-agents-workshop_tethys-persist
+  ollama-models:
+    name: tethys-agents-workshop_ollama-models

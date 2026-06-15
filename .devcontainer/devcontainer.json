@@ -1,0 +1,43 @@
+{
+  "name": "tethys-agents-workshop",
+  "//": "VS Code Dev Containers config — opens this folder inside the running tethysdash service so participants can edit ./repos/geoglows-summit-plugin-example/ with full Python language-server support against the container's venv.",
+
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "tethysdash",
+  "workspaceFolder": "/workspaces",
+
+  "remoteUser": "tethys",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "ms-azuretools.vscode-docker"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "python.terminal.activateEnvironment": false,
+        "python.analysis.extraPaths": [
+          "/workspaces/geoglows-summit-plugin-example/src",
+          "/workspaces/tethys-agents/src",
+          "/workspaces/tethysapp-tethys_dash"
+        ]
+      }
+    }
+  },
+
+  "forwardPorts": [8000, 11434],
+  "portsAttributes": {
+    "8000": {
+      "label": "TethysDash (Django)",
+      "onAutoForward": "openBrowser"
+    },
+    "11434": {
+      "label": "Ollama API"
+    }
+  },
+
+  "shutdownAction": "stopCompose"
+}

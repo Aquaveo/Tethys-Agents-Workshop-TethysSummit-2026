@@ -1,0 +1,17 @@
+# Workshop secrets / local overrides
+.env
+
+# Cloned-by-setup.sh source repos — participants get their own at workshop time
+repos/
+
+# Docker volumes / caches (named volumes live outside the repo anyway, but
+# any stray local-mount overflow lands here)
+.cache/
+.venv/
+
+# Editor / OS detritus
+*.pyc
+__pycache__/
+.DS_Store
+.idea/
+.vscode/settings.json
