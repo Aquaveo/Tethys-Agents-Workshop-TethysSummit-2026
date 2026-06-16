@@ -28,14 +28,24 @@ server with no rebuild.
 ## Quickstart
 
 ```bash
-# One-time host setup (Docker + docker compose v2)
-git clone https://github.com/<your-org>/tethys-agents-workshop
+# Clone the workshop
+git clone https://github.com/Aquaveo/tethys-agents-workshop
 cd tethys-agents-workshop
 cp .env.example .env             # edit refs / model if needed
+
+# Verify host prerequisites + (best-effort) auto-install Docker / git
+# if missing. Safe to re-run; idempotent. Skip if you know Docker +
+# docker compose v2 are already installed.
+./scripts/pre-setup.sh
 
 # Clone source repos, build image, pull model, start everything
 ./scripts/setup.sh
 ```
+
+> **Note:** `pre-setup.sh` will prompt before any sudo install. Pass
+> `--yes` / `-y` to skip prompts (useful for CI / classroom imaging).
+> On Linux, if it installed Docker for you, you must log out and back
+> in (or `newgrp docker`) before `setup.sh` will succeed.
 
 Then open:
 
@@ -81,6 +91,7 @@ when you add a new tool or viz plugin.
 
 | Goal | Command |
 |---|---|
+| Check + install host prerequisites (Docker, git, etc.) | `./scripts/pre-setup.sh` |
 | First-time setup | `./scripts/setup.sh` |
 | Stop everything | `docker compose down` |
 | Logs (live) | `docker compose logs -f tethysdash` |
