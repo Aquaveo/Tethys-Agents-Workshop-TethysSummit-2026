@@ -40,11 +40,11 @@ services:
       - tethys-persist:/home/tethys/persist
     ports:
       - "127.0.0.1:8000:8000"
-    environment:
-      # Pointed at the ollama service by compose-internal DNS. The portal_config
-      # baked into the image references this same URL.
-      OLLAMA_HOST: "http://ollama:11434"
-      AGENT_MODEL: "${AGENT_MODEL:-qwen3:8b}"
+    # NOTE: no `environment:` block. Model + host both live in
+    # portal_config.yml's AGENTS.MODELS list (each entry is {name, host}).
+    # The consumer (cli.py / controllers.py) sets OLLAMA_HOST in the
+    # process env at agent-construct time. Override the model per
+    # invocation with `tethysdash chat --model <name>`.
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/"]
       interval: 10s

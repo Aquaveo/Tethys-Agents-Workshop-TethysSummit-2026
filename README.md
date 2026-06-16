@@ -22,7 +22,7 @@ the tethysdash container:
 | [geoglows-summit-plugin-example](https://github.com/Aquaveo/geoglows-summit-plugin-example) | `./repos/geoglows-summit-plugin-example` | `main` |
 
 All three are installed `-e` (editable) inside the container at the same
-path the bind-mount overlays — your edits hot-reload via Django's dev
+path the bind-mount overlays - your edits hot-reload via Django's dev
 server with no rebuild.
 
 ## Quickstart
@@ -48,7 +48,7 @@ Then open:
 ## Editing the plugin
 
 ```bash
-# Edit anything under here — Django auto-reloads on save:
+# Edit anything under here - Django auto-reloads on save:
 $EDITOR repos/geoglows-summit-plugin-example/src/geoglows_summit_example/...
 ```
 
@@ -74,7 +74,7 @@ src/geoglows_summit_example/
 ```
 
 The agent's `RUNNERS` dict, the tools' module functions, and the viz
-classes are all discovered automatically — no entry-point file to update
+classes are all discovered automatically - no entry-point file to update
 when you add a new tool or viz plugin.
 
 ## Commands
@@ -104,18 +104,19 @@ bind-mounted repos.
   Django's `manage start` dev server.
 * **Why `127.0.0.1` binds?** Workshop laptops shouldn't expose Tethys or
   Ollama on the LAN. SSH tunnel `-L 8000` if you're remoting in.
-* **Why both `AGENT_PLUGIN_PACKAGES` and `AGENT_TOOL_PACKAGES`?** Distinct
-  contracts. `AGENT_PLUGIN_PACKAGES` lists packages exposing a `RUNNERS`
-  dict at `<pkg>.agent` (consumed by `tethysdash chat`).
-  `AGENT_TOOL_PACKAGES` lists packages exposing functions at `<pkg>.tools`
-  (consumed by the chat controller's tool surface). The workshop plugin
-  appears in both.
+* **Why one `AGENTS` block?** A package can contribute `<pkg>.tools`,
+  `<pkg>.agent`, or both. Each discovery layer picks the submodule it
+  needs and silently skips packages that don't expose it - so a single
+  `AGENTS.PACKAGES` list covers tool packages, runner packages, and
+  packages that ship both. `MODELS[0]` is the default model (CLI
+  `--model` picks any other value); `MODE` is the default runner name
+  (CLI `--runner` overrides).
 
 ## Troubleshooting
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `tethysdash chat` says "AGENT_PLUGIN_PACKAGES is empty" | `portal_config.yml` wasn't picked up | `docker compose down && docker compose up -d` |
+| `tethysdash chat` says "AGENTS.PACKAGES is empty" | `portal_config.yml` wasn't picked up | `docker compose down && docker compose up -d` |
 | `ModuleNotFoundError: geoglows_summit_example` | Editable install lost; bind-mount shadowed it | `docker compose exec tethysdash bash -c "pip install -e /workspaces/geoglows-summit-plugin-example"` |
 | Ollama `pull` hangs forever | Model name typo or proxy issue | `docker compose exec ollama ollama list` to verify reachability |
 | Dashboard renders blank tiles | Python error in your viz plugin | `docker compose logs -f tethysdash` to see the traceback |

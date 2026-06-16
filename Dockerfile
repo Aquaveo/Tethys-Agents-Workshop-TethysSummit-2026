@@ -85,7 +85,7 @@ RUN git clone --depth 1 --branch "${GEOGLOWS_REF}" \
        "${GEOGLOWS_REPO}" "${TETHYS_APPS_ROOT}/geoglows-summit-plugin-example" \
   && uv pip install --no-cache -e "${TETHYS_APPS_ROOT}/geoglows-summit-plugin-example"
 
-# Bake the workshop portal_config (AGENT_PLUGIN_PACKAGES, AGENT_MODEL, ollama URL).
+# Bake the workshop portal_config (AGENTS block + ollama URL).
 COPY portal_config.yml ${TETHYS_HOME}/portal_config.yml
 
 # World-readable so the non-root runtime user can execute.
