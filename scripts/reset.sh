@@ -2,7 +2,7 @@
 # Nuke + re-clone. Use when the workshop image / persistent state / cloned
 # repos are in a bad state and you want a clean slate.
 #
-# Spares: the Ollama model cache (named volume `..._ollama-models`) — these
+# Spares: the Ollama model cache (named volume `..._ollama-models`) - these
 # are multi-GB downloads and almost never the cause of breakage.
 
 set -euo pipefail

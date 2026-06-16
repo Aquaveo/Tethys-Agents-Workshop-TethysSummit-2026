@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tethys-agents-workshop — one-shot setup for fresh hosts.
+# tethys-agents-workshop - one-shot setup for fresh hosts.
 #
 #   1. Clone (or fast-forward) the three source repos at the configured refs.
 #   2. docker compose pull || docker compose build.
@@ -18,7 +18,7 @@ if [[ -f .env ]]; then
   # shellcheck disable=SC1091
   set -a; source .env; set +a
 else
-  echo "[setup] .env not found — copying from .env.example"
+  echo "[setup] .env not found - copying from .env.example"
   cp .env.example .env
   # shellcheck disable=SC1091
   set -a; source .env; set +a

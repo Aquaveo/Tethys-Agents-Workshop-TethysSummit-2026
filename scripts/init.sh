@@ -32,8 +32,8 @@ if [[ ! -f "${MARKER}" ]]; then
   tethys db init 2>/dev/null || true
   tethys db migrate
 
-  # Superuser — non-interactive create with the workshop's defaults.
-  echo "[init] creating superuser 'admin' / 'admin' (workshop default — change before prod)"
+  # Superuser - non-interactive create with the workshop's defaults.
+  echo "[init] creating superuser 'admin' / 'admin' (workshop default - change before prod)"
   PORTAL_SUPERUSER_NAME=admin \
   PORTAL_SUPERUSER_PASSWORD=admin \
   PORTAL_SUPERUSER_EMAIL=admin@workshop.local \
