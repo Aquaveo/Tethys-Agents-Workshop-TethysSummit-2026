@@ -86,7 +86,7 @@ use a non-thinking model.
 |---|---|
 | "The LLM sees my code" | Only sees name + docstring + type annotations |
 | "Adding more tools always helps" | Catalog grows; past ~10-50 tools small models drop accuracy. Use recipes |
-| "I must use `@tool`" | Only for explicit registration. Discovery auto-wraps any qualifying function |
+| "I'll need to use `@tool` to register my function" | You won't. Discovery auto-wraps everything meeting the rules above. `@tool` exists for standalone library use outside this convention; no plugin or host in this workshop touches it |
 | "The library needs a model with a tools API" | No - uses prompted protocol; works on any chat-tuned LLM |
 | "Stripping thinking saves latency" | No - it only hides the output. Tokens are generated regardless |
 
@@ -104,7 +104,7 @@ use a non-thinking model.
 | Concept | File | Lines |
 |---|---|---|
 | Build a tool's signature dict | `tool.py` | 5-25 |
-| `@tool` decorator | `tool.py` | 89-106 |
+| `@tool` decorator (definition only — never written by hand in this workshop) | `tool.py` | 89-106 |
 | ReAct system prompt template | `react_agent.py` | 22-57 |
 | Catalog injection into prompt | `react_agent.py` | 241-244 |
 | The LLM call | `utils/completions.py` | 1-15 |
