@@ -10,10 +10,15 @@ version: 1.0
 
 apps:
   tethysdash:
-    PERSISTENT_STORES:
-      primary_db:
-        URL: sqlite:////home/tethys/persist/tethysdash_primary.sqlite
-        SPATIAL: false
+    # NOTE on persistent store wiring (PersistentStoreDatabaseSetting "primary_db"):
+    # Tethys's portal_config loader does NOT auto-create services from an
+    # `apps.<app>.PERSISTENT_STORES: {<setting_name>: {URL, SPATIAL}}` block -
+    # that shape is silently ignored. The runtime requires an actual
+    # PersistentStoreService row PLUS an explicit setting->service link, both
+    # of which are CLI-only. scripts/init.sh runs these on first container
+    # start (idempotent):
+    #     tethys services create persistent -n tethysdash_primary -t sqlite -d $TETHYS_PERSIST
+    #     tethys link persistent:tethysdash_primary tethysdash:ps_database:primary_db
     SETTINGS:
       # Single source of truth for the chat agents.
       #
@@ -56,6 +61,12 @@ settings:
   MEDIA_ROOT: /home/tethys/persist/media
   TETHYS_WORKSPACES_ROOT: /home/tethys/persist/workspaces
 
+  # DEBUG must be true: `tethys manage start` (Daphne/ASGI) has no static
+  # middleware installed, so /static/* is only served by Django's
+  # contrib.staticfiles auto-handler, which only runs when DEBUG=True. The
+  # bundle filename mismatch (controller wants frontend/main.js, repo ships
+  # main.<hash>.js) is resolved separately by init.sh symlinking main.js to
+  # the hashed bundle.
   DEBUG: true
   ALLOWED_HOSTS:
     - "*"
