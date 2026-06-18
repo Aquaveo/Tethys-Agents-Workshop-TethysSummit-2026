@@ -62,7 +62,7 @@ services:
     image: ollama/ollama:latest
     container_name: tethys-agents-workshop-ollama
     volumes:
-      # Models live here — ~5 GB for qwen3:8b, survives container restarts.
+      # Models live here — ~2.5 GB for qwen3:4b, survives container restarts.
       - ollama-models:/root/.ollama
     ports:
       - "127.0.0.1:11434:11434"

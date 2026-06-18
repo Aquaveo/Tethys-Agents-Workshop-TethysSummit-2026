@@ -60,7 +60,7 @@ settings:
       - tethysapp.tethysdash
       - geoglows_summit_example
     MODELS:
-      - name: qwen3:8b
+      - name: qwen3:4b
         host: http://ollama:11434
     MODE: multi
 

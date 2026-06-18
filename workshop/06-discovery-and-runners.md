@@ -57,7 +57,7 @@ RUNNERS = {"single": _SingleRunner, "multi": _CrewRunner}
 # In the host:
 from tethys_agents.runner import discover_runners
 runners = discover_runners(["geoglows_summit_example"])
-chosen  = runners["multi"](model="qwen3:8b", dashboard_tool_packages=[...])
+chosen  = runners["multi"](model="qwen3:4b", dashboard_tool_packages=[...])
 chosen.run_turn("show me the forecast")
 ```
 

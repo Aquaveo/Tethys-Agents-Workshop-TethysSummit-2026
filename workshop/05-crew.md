@@ -106,11 +106,11 @@ with Crew() as crew:
     a = Agent(name="finder",   backstory="You find rivers.",
               task_description="Find river near (6.25, -75.56).",
               task_expected_output="Just the river_id.",
-              tools=tools, llm="qwen3:8b")
+              tools=tools, llm="qwen3:4b")
     b = Agent(name="reporter", backstory="You summarize forecasts.",
               task_description="Fetch + summarize the forecast for the upstream river_id.",
               task_expected_output="One sentence.",
-              tools=tools, llm="qwen3:8b")
+              tools=tools, llm="qwen3:4b")
     a >> b
 
 print("Registered:", [agent.name for agent in crew.agents])

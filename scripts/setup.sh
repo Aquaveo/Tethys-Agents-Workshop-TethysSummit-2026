@@ -89,7 +89,7 @@ for _ in $(seq 1 30); do
   sleep 2
 done
 
-MODEL="${AGENT_MODEL:-qwen3:8b}"
+MODEL="${AGENT_MODEL:-qwen3:4b}"
 echo "[setup] pulling ollama model: ${MODEL} (skipped if already present)"
 docker compose exec -T ollama ollama list | grep -q "^${MODEL%:*}\b" || \
   docker compose exec -T ollama ollama pull "${MODEL}"

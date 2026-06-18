@@ -24,7 +24,7 @@ from tethys_agents.discover import discover
 tools = discover(["geoglows_summit_example"])
 agent = ReactAgent(
     tools=tools,
-    model="qwen3:8b",
+    model="qwen3:4b",
     system_prompt="You are a hydrology assistant.",
 )
 answer = agent.run(user_msg="show me the Caracoli forecast")
@@ -128,7 +128,7 @@ tools = discover(["geoglows_summit_example"])
 
 agent = ReactAgent(
     tools=tools,
-    model="qwen3:8b",
+    model="qwen3:4b",
     system_prompt="You are a concise hydrology assistant.",
 )
 answer = agent.run(user_msg="Which GEOGloWS river is nearest to lat=6.25, lon=-75.56?")

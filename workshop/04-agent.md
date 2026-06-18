@@ -29,7 +29,7 @@ data_agent = Agent(
     task_description="Find the river near (6.25, -75.56) and fetch its forecast.",
     task_expected_output="A handle string the next agent can use.",
     tools=data_tools,
-    llm="qwen3:8b",
+    llm="qwen3:4b",
 )
 ```
 
@@ -116,7 +116,7 @@ finder = Agent(
     task_description="Find the river_id nearest to lat=6.25, lon=-75.56.",
     task_expected_output="Just the river_id on its own line.",
     tools=tools,
-    llm="qwen3:8b",
+    llm="qwen3:4b",
 )
 reporter = Agent(
     name="reporter",
@@ -124,7 +124,7 @@ reporter = Agent(
     task_description="Using the upstream finder's result, fetch the forecast and summarize the peak.",
     task_expected_output="One sentence with the peak flow.",
     tools=tools,
-    llm="qwen3:8b",
+    llm="qwen3:4b",
 )
 
 finder >> reporter         # dependency edge - finder runs first

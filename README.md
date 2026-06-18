@@ -10,7 +10,7 @@ dashboard; Ollama runs the LLM locally.
 | Service | Role | Port |
 |---|---|---|
 | `tethysdash` | Django + tethys-agents + your editable plugin | `127.0.0.1:8000` |
-| `ollama` | Local LLM backend (default model: `qwen3:8b`) | `127.0.0.1:11434` |
+| `ollama` | Local LLM backend (default model: `qwen3:4b`) | `127.0.0.1:11434` |
 
 Three repos are cloned into `./repos/` by `setup.sh` and bind-mounted into
 the tethysdash container:
