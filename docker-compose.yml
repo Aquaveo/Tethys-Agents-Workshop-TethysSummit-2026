@@ -40,11 +40,16 @@ services:
       - tethys-persist:/home/tethys/persist
     ports:
       - "127.0.0.1:8000:8000"
-    # NOTE: no `environment:` block. Model + host both live in
-    # portal_config.yml's AGENTS.MODELS list (each entry is {name, host}).
-    # The consumer (cli.py / controllers.py) sets OLLAMA_HOST in the
-    # process env at agent-construct time. Override the model per
-    # invocation with `tethysdash chat --model <name>`.
+    # OLLAMA_HOST is set at the container level so every Python entry
+    # point (the chat CLI, ad-hoc heredocs like the chapter "Try it"
+    # blocks, future debugging scripts) reaches Ollama without remembering
+    # the env var. The chat CLI ALSO sets this in-process from
+    # portal_config.yml's AGENTS.MODELS[0].host at agent-construct time -
+    # that path stays as defense-in-depth and as the override hook when a
+    # MODELS entry points at a different backend (e.g. a hosted endpoint).
+    # Use `tethysdash chat --model <name>` to switch model per-invocation.
+    environment:
+      OLLAMA_HOST: http://ollama:11434
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/"]
       interval: 10s
