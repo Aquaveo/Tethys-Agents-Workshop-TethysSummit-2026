@@ -28,7 +28,16 @@ fi
 # 1. Clone or fast-forward each repo at its configured ref.
 # ---------------------------------------------------------------------------
 clone_or_pull() {
-  local name="$1" url="$2" ref="$3" dest="repos/${name}"
+  # NOTE: separate `local` statements, not `local a=.. b=.. c="..${a}.."`.
+  # Bash's multi-name `local` evaluates ALL right-hand sides before binding
+  # names, so a cross-reference like `dest="repos/${name}"` resolves against
+  # the OUTER scope - which under `set -u` aborts with "name: unbound
+  # variable". Splitting the declarations makes each binding visible to the
+  # next assignment's RHS.
+  local name="$1"
+  local url="$2"
+  local ref="$3"
+  local dest="repos/${name}"
   if [[ -d "${dest}/.git" ]]; then
     echo "[setup] ${name}: fetching + checkout ${ref}"
     git -C "${dest}" fetch --quiet --tags origin
