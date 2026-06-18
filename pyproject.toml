@@ -27,4 +27,11 @@ dependencies = [
     "sqlalchemy==1.*",
     "requests>=2.32.4,<3",
     "tornado>=6.5,<7",
+    # Upstream packaging bug: geoglows 2.2.0 imports pytz unconditionally in
+    # _plots/format_tools.py but does NOT list it in pyproject.toml requires.
+    # Importing `geoglows` fails with ModuleNotFoundError until pytz is
+    # installed. Declare it here so the workshop's image bakes it in,
+    # independent of any future geoglows release that may or may not fix
+    # the upstream metadata.
+    "pytz",
 ]

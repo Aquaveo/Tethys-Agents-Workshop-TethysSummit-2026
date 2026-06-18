@@ -19,40 +19,13 @@ apps:
     # start (idempotent):
     #     tethys services create persistent -n tethysdash_primary -t sqlite -d $TETHYS_PERSIST
     #     tethys link persistent:tethysdash_primary tethysdash:ps_database:primary_db
-    SETTINGS:
-      # Single source of truth for the chat agents.
-      #
-      # PACKAGES - Python packages the discovery layers walk. A package
-      #   may contribute tools (<pkg>.tools), runners (<pkg>.agent), or
-      #   both. Missing submodules are skipped silently, so it's safe to
-      #   list a tools-only host package alongside a tools+runners plugin.
-      #   Consumed by:
-      #     - the chat controller        (controllers.py)
-      #     - the tethysdash chat CLI    (cli.py - passes to runner)
-      #
-      # MODELS  - list of available LLM model entries. Each entry pairs a
-      #   model `name:` with the `host:` URL of the backend serving it.
-      #   The first entry is the default; the CLI's --model flag can pick
-      #   any other name (entries with a matching name use that entry's
-      #   host; unrecognized names fall back to the default entry's host).
-      #   setup.sh pre-pulls the first model into ollama so the workshop's
-      #   first prompt doesn't stall on a multi-GB download.
-      #   Per-model host lets future entries point at different backends
-      #   (e.g. one local ollama, one hosted inference endpoint) without a
-      #   separate top-level OLLAMA_HOST setting.
-      #
-      # MODE    - default runner name. Each plugin's RUNNERS dict (at
-      #   <pkg>.agent) keys are the valid choices. The CLI's --runner flag
-      #   overrides per-invocation. The geoglows-summit-example plugin
-      #   exposes "single" and "multi".
-      AGENTS:
-        PACKAGES:
-          - tethysapp.tethysdash
-          - geoglows_summit_example
-        MODELS:
-          - name: qwen3:8b
-            host: http://ollama:11434
-        MODE: multi
+    #
+    # AGENTS lives at the TOP-LEVEL `settings:` block below, NOT here. The
+    # consumers (cli.py / controllers.py) read it via `from django.conf
+    # import settings; settings.AGENTS`, which only sees the top-level
+    # block. An `apps.tethysdash.SETTINGS.AGENTS` block goes into the
+    # app's CustomSetting bucket (`app.get_custom_setting(...)`) and is
+    # invisible to django.conf.settings.
 
 settings:
   SECRETS:
@@ -60,6 +33,36 @@ settings:
   STATIC_ROOT: /home/tethys/persist/static
   MEDIA_ROOT: /home/tethys/persist/media
   TETHYS_WORKSPACES_ROOT: /home/tethys/persist/workspaces
+
+  # Single source of truth for the chat agents. Read by the chat controller
+  # (controllers.py) and the `tethysdash chat` CLI (cli.py) via
+  # `from django.conf import settings; settings.AGENTS`.
+  #
+  # PACKAGES - Python packages the discovery layers walk. A package may
+  #   contribute tools (<pkg>.tools), runners (<pkg>.agent), or both.
+  #   Missing submodules are skipped silently, so it's safe to list a
+  #   tools-only host package alongside a tools+runners plugin.
+  #
+  # MODELS  - list of {name, host} dicts. The first entry is the default;
+  #   `tethysdash chat --model <name>` picks any other entry by name.
+  #   Per-model host lets future entries point at different backends
+  #   (e.g. one local ollama, one hosted inference endpoint) without a
+  #   separate top-level OLLAMA_HOST setting. setup.sh pre-pulls the first
+  #   model into ollama so the workshop's first prompt doesn't stall on a
+  #   multi-GB download.
+  #
+  # MODE    - default runner name. Each plugin's RUNNERS dict (at
+  #   <pkg>.agent) keys are the valid choices. The CLI's `--runner` flag
+  #   overrides per-invocation. The geoglows-summit-example plugin exposes
+  #   "single" and "multi".
+  AGENTS:
+    PACKAGES:
+      - tethysapp.tethysdash
+      - geoglows_summit_example
+    MODELS:
+      - name: qwen3:8b
+        host: http://ollama:11434
+    MODE: multi
 
   # DEBUG must be true: `tethys manage start` (Daphne/ASGI) has no static
   # middleware installed, so /static/* is only served by Django's
