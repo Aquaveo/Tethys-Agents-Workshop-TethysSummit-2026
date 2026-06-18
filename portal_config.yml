@@ -67,11 +67,6 @@ settings:
       ENGINE: django.db.backends.sqlite3
       NAME: /home/tethys/persist/tethys_platform.sqlite
 
-  LOGGING:
-    handlers:
-      console:
-        level: INFO
-
   CHANNEL_LAYERS:
     default:
       BACKEND: channels.layers.InMemoryChannelLayer
