@@ -69,16 +69,46 @@ The simplest "new tool" possible: a friendlier interface around one
 primitive. From `recipes.py`:
 
 ```python
+# Hardcoded internally - the docstring deliberately does NOT mention the
+# literal river_id. Small models copy concrete numbers from docstrings
+# into other tool calls verbatim.
+_CARACOLI_RIVER_ID = "610217883"
+
+
 def forecast_for_caracoli() -> str:
-    """Fetch the GEOGloWS forecast for the workshop's reference river (Caracoli)."""
-    return fetch_forecast("610217883")
+    """Fetch the GEOGloWS forecast for the workshop's reference river, Caracoli.
+
+    Use this ONLY when the user explicitly names Caracoli or asks for "the
+    workshop's reference river". For ANY other river or location, do NOT
+    call this - use find_river_id_near_location + fetch_forecast (or
+    bias_correction_chain) instead.
+    """
+    return fetch_forecast(_CARACOLI_RIVER_ID)
 ```
 
-The LLM now has a zero-argument tool it can call when the user says "show
-me the forecast" without specifying a location. Compare with what the LLM
-would otherwise have to do: call `find_river_id_near_location` first,
-parse the river_id out of the prose, then call `fetch_forecast`. Your
-single-line tool collapses three rounds into one.
+Three things to notice:
+
+- **Zero-arg wrapper collapses three rounds into one.** Without this tool
+  the LLM would have to call `find_river_id_near_location`, parse the
+  river_id out of prose, then call `fetch_forecast`.
+- **The literal id is in a constant, not the docstring.** Small models
+  often copy concrete numbers from docstrings into other tool calls
+  ("oh, river_id is usually 610217883"). Hide the value, expose only the
+  intent.
+- **The exclusion clause matters.** Without `Use this ONLY when ... do
+  NOT call this for any other river`, a 4B model will sometimes fire
+  this for "show me the forecast for the Amazon" - the function name
+  matches the topic and a small model can't tell that "Caracoli" was a
+  proper name, not a synonym for "forecast".
+
+**Try it.** In the chat REPL (`docker compose exec tethysdash tethysdash chat
+--user admin --runner single`), type:
+
+> Show me the forecast for Caracoli.
+
+What to watch in the colored trace: a single `<tool_call>` for
+`forecast_for_caracoli` (zero args), one observation, then prose. No
+`find_river_id_near_location` call - that's the value of the wrapper.
 
 ## Worked example 2 - chaining primitives
 
@@ -92,11 +122,24 @@ def bias_correction_chain(
 ) -> str:
     """Full bias-correction pipeline from a coordinate + IDEAM station id."""
     river_id = _parse_river_id(find_river_id_near_location(lat, lon))
-    ensembles_handle  = _extract_handle(fetch_forecast_ensembles(river_id))
-    retrospective_handle = _extract_handle(fetch_retrospective(river_id))
-    observed_handle   = _extract_handle(fetch_observed_discharge(station_id))
+
+    # Short-circuit on the first primitive that returns an error string
+    # (no "Handle:" prefix). See the "Errors short-circuit" bullet below
+    # for why this matters.
+    ensembles_out = fetch_forecast_ensembles(river_id)
+    if "Handle:" not in ensembles_out:
+        return ensembles_out
+    retrospective_out = fetch_retrospective(river_id)
+    if "Handle:" not in retrospective_out:
+        return retrospective_out
+    observed_out = fetch_observed_discharge(station_id)
+    if "Handle:" not in observed_out:
+        return observed_out
+
     return bias_correct_forecast(
-        ensembles_handle, retrospective_handle, observed_handle,
+        _extract_handle(ensembles_out),
+        _extract_handle(retrospective_out),
+        _extract_handle(observed_out),
     )
 ```
 
@@ -108,11 +151,26 @@ Two things this teaches:
   primitive needs. In production you'd want primitives to return
   structured data alongside the prose; for the workshop, string parsing
   keeps the primitives readable to the LLM.
-- **Errors propagate naturally.** If `fetch_retrospective` fails it
-  returns a string without `"Handle: "` - `_extract_handle` returns it
-  unchanged, and the next primitive sees an obviously-wrong handle and
-  fails cleanly with its own error message. The LLM reads the error and
-  retries. No exception handling needed at the recipe layer.
+- **Errors short-circuit at the recipe layer.** Every primitive returns
+  either a string ending in `"Handle: ..."` (success) or a string starting
+  with `"Error ..."` (failure). The recipe checks for `"Handle:"` after
+  each call and returns the error string unchanged as soon as one shows
+  up. Without this guard, a bad upstream output would flow through
+  `_extract_handle` (which intentionally passes errors through) into
+  `bias_correct_forecast`, where `parse_handle`'s colon-split mangles the
+  error sentence into a confusing nested "river_id mismatch" error two
+  layers downstream - a real bug we hit during workshop dev. The LLM
+  reads the clean upstream error and can retry sensibly.
+
+**Try it.** In the chat REPL, type:
+
+> Run the bias-correction pipeline for coordinates 6.25, -75.56 using IDEAM station 0026177030.
+
+What to watch: a SINGLE `<tool_call>` for `bias_correction_chain`. Without
+this recipe the agent would emit four separate tool calls
+(`find_river_id_near_location` → `fetch_forecast_ensembles` →
+`fetch_retrospective` → `fetch_observed_discharge` → `bias_correct_forecast`)
+- five rounds collapse into one.
 
 ## Your exercise
 
@@ -126,12 +184,12 @@ def my_workshop_tool(river_id: str) -> str:
 
 Pick one of these directions (or invent your own):
 
-| Idea | Composition |
-|---|---|
-| `compare_forecasts(river_id, station_id)` | fetch raw + bias-corrected, report median delta |
-| `flow_status_at(river_id, station_id)` | retro + current forecast, return HIGH/NORMAL/LOW vs. historical |
-| `multi_station_observed(station_ids: str)` | accept a comma-separated list of station ids, fetch each, return a one-line summary per |
-| `quick_overview(lat, lon, station_id)` | retro + bias + observed in one tool, return short summary |
+| Idea | Composition | Prompt to try once you've implemented it |
+|---|---|---|
+| `compare_forecasts(river_id, station_id)` | fetch raw + bias-corrected, report median delta | *"How different is the bias-corrected forecast from the raw one for river 610217883 against station 0026177030?"* |
+| `flow_status_at(river_id, station_id)` | retro + current forecast, return HIGH/NORMAL/LOW vs. historical | *"Is river 610217883 running high, normal, or low right now compared to history? Use station 0026177030."* |
+| `multi_station_observed(station_ids: str)` | accept a comma-separated list of station ids, fetch each, return a one-line summary per | *"Show me observed discharge for stations 0026177030, 0026197040, and 0026200030."* |
+| `quick_overview(lat, lon, station_id)` | retro + bias + observed in one tool, return short summary | *"Give me a quick overview of the river near 6.25, -75.56 using station 0026177030."* |
 
 Two rules to follow:
 
@@ -164,13 +222,11 @@ You should see your tool name in the list.
 docker compose exec tethysdash tethysdash chat --user admin --runner single
 ```
 
-Then prompt the agent in a way that should trigger your tool. For example,
-if you wrote `flow_status_at`, prompt:
-
-> Is the river at 6.25, -75.56 running high, normal, or low right now compared to history? Use station 0026177030 for observed data.
-
-Watch the colored trace - you should see your tool's name in a
-`<tool_call>` block.
+Type one of the "Prompt to try" rows from the table above (or your own,
+phrased around your tool's docstring). Watch the colored trace - you should
+see your tool's name in a `<tool_call>` block, NOT a chain of primitive
+calls. If the agent emits primitives instead, the docstring isn't
+specific enough - rewrite it and try again.
 
 ## Common mistakes
 

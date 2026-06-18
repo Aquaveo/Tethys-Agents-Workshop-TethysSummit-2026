@@ -74,13 +74,13 @@ services:
     # an NVIDIA GPU + nvidia-container-toolkit installed. CPU-only is the
     # safer default for participant laptops.
     # ----------------------------------------------------------------------
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
 volumes:
   tethys-persist:
