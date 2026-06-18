@@ -61,7 +61,7 @@ settings:
       - geoglows_summit_example
     MODELS:
       - name: qwen3:4b
-        host: http://ollama:11434
+        host: http://host.docker.internal:11434
     MODE: multi
 
   # DEBUG must be true: `tethys manage start` (Daphne/ASGI) has no static

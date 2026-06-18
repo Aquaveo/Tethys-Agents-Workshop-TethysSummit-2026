@@ -27,9 +27,17 @@ services:
         TETHYS_AGENTS_REF: ${TETHYS_AGENTS_REF:-main}
         GEOGLOWS_REF: ${GEOGLOWS_REF:-main}
     container_name: tethys-agents-workshop-tethysdash
-    depends_on:
-      ollama:
-        condition: service_healthy
+    # NB: no `depends_on: ollama` - this workshop is wired to use the
+    # HOST's local Ollama (running on the WSL2 host directly, not in
+    # docker). The bundled `ollama:` service below is left in compose
+    # but stopped; restart it + flip the env vars below to switch back
+    # to the bundled version.
+    extra_hosts:
+      # Required on native Docker Engine (Linux/WSL2) so the container
+      # can resolve host.docker.internal -> the host's gateway IP.
+      # Docker Desktop wires this automatically; bare Docker Engine
+      # does not.
+      - "host.docker.internal:host-gateway"
     volumes:
       # Editable workshop repos — same paths as the image's `-e` install.
       # Edits on the host hot-reload inside the container.
@@ -40,16 +48,15 @@ services:
       - tethys-persist:/home/tethys/persist
     ports:
       - "127.0.0.1:8000:8000"
-    # OLLAMA_HOST is set at the container level so every Python entry
-    # point (the chat CLI, ad-hoc heredocs like the chapter "Try it"
-    # blocks, future debugging scripts) reaches Ollama without remembering
-    # the env var. The chat CLI ALSO sets this in-process from
-    # portal_config.yml's AGENTS.MODELS[0].host at agent-construct time -
-    # that path stays as defense-in-depth and as the override hook when a
-    # MODELS entry points at a different backend (e.g. a hosted endpoint).
-    # Use `tethysdash chat --model <name>` to switch model per-invocation.
+    # OLLAMA_HOST points at the HOST's Ollama (running directly on the
+    # WSL2 host, with OLLAMA_HOST=0.0.0.0:11434 so the container can
+    # reach it via host.docker.internal). The chat CLI ALSO sets this
+    # in-process from portal_config.yml's AGENTS.MODELS[0].host at
+    # agent-construct time - keep both in sync.
+    # To revert to the bundled docker ollama service: change this back
+    # to http://ollama:11434 AND re-add the depends_on block above.
     environment:
-      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_HOST: http://host.docker.internal:11434
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/"]
       interval: 10s
