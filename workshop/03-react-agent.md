@@ -114,6 +114,59 @@ for entry in agent.trace:
 | Cap LLM round-trips for a quick demo | `agent.run(user_msg, max_rounds=3)` |
 | Override the system prompt entirely | Construct with your own `system_prompt=...` |
 
+## Try it (3 min)
+
+Build a 1-tool ReactAgent and inspect its trace. Run inside the container:
+
+```bash
+docker compose exec tethysdash python - <<'PY'
+from tethys_agents.react_agent import ReactAgent
+from tethys_agents.discover import discover
+
+# Discover only this plugin's tools (small, focused tool list).
+tools = discover(["geoglows_summit_example"])
+
+agent = ReactAgent(
+    tools=tools,
+    model="qwen3:8b",
+    system_prompt="You are a concise hydrology assistant.",
+)
+answer = agent.run(user_msg="Which GEOGloWS river is nearest to lat=6.25, lon=-75.56?")
+print("\n--- ANSWER ---\n", answer)
+print("\n--- TRACE ---")
+for e in agent.trace:
+    print(e["type"], "|", e.get("tool") or e.get("text", "")[:80])
+PY
+```
+
+What to look for:
+
+- The `trace` shows one `tool_call` entry (`find_river_id_near_location`),
+  one `observation`, then an `answer` entry.
+- Re-run with `agent.run(..., max_rounds=1)` - the agent gets cut off
+  before it can write its prose answer. That's the runaway guard biting
+  legitimate work (Misconception #2 above).
+
+### Or test it end-to-end via the chat CLI
+
+```bash
+docker compose exec tethysdash tethysdash chat --user admin --runner single
+```
+
+Then type:
+
+> Which GEOGloWS river is nearest to lat=6.25, lon=-75.56?
+
+What to watch for in the colored output:
+
+- One `<tool_call>` line invoking `find_river_id_near_location`, an
+  observation line with the result, then prose without another
+  `<tool_call>` - that's the **implicit-exit** path from the loop
+  diagram above firing in real time.
+- The CLI does not let you inspect `agent.trace` as a list - for that
+  use the heredoc above. The CLI is the production-shape demo; the
+  heredoc is the under-the-hood demo.
+
 ## Quick reference
 
 | Concept | File | Lines |

@@ -89,6 +89,70 @@ The cycle detector is the `len != len` check - if any agent never hit
 | Capture every agent's trace for analysis | After `crew.run()`, walk `agent.react_agent.trace` for each agent in the crew |
 | Build a different graph DSL | Skip `>>` entirely; call `agent.add_dependency()` directly |
 
+## Try it (3 min)
+
+Build a 2-agent crew, watch it topo-sort itself, then add a cycle and
+watch it fail loudly.
+
+```bash
+docker compose exec tethysdash python - <<'PY'
+from tethys_agents.crew import Crew
+from tethys_agents.agent import Agent
+from tethys_agents.discover import discover
+
+tools = discover(["geoglows_summit_example"])
+
+with Crew() as crew:
+    a = Agent(name="finder",   backstory="You find rivers.",
+              task_description="Find river near (6.25, -75.56).",
+              task_expected_output="Just the river_id.",
+              tools=tools, llm="qwen3:8b")
+    b = Agent(name="reporter", backstory="You summarize forecasts.",
+              task_description="Fetch + summarize the forecast for the upstream river_id.",
+              task_expected_output="One sentence.",
+              tools=tools, llm="qwen3:8b")
+    a >> b
+
+print("Registered:", [agent.name for agent in crew.agents])
+print("Run order:", [agent.name for agent in crew._topological_sort()])
+
+# Now uncomment the next line to introduce a cycle and re-run topo-sort:
+# b >> a    # cycle: a -> b -> a
+# crew._topological_sort()   # raises ValueError("Circular dependencies detected")
+PY
+```
+
+What to look for:
+
+- `crew.agents` already lists both - they self-registered via
+  `Crew.current_crew` (the ambient-context trick) without you ever
+  passing `crew` to either constructor.
+- `_topological_sort()` returns `[finder, reporter]` because `b` depends
+  on `a`.
+- Uncomment the last two lines: the cycle check (`len != len` in Kahn's
+  algorithm) catches it and raises before any agent runs.
+
+### Or test it end-to-end via the chat CLI
+
+```bash
+docker compose exec tethysdash tethysdash chat --user admin --runner multi
+```
+
+Then type any prompt that needs data + a tile, e.g.:
+
+> Find the river near (6.25, -75.56), fetch its forecast, and place a tile on the dashboard.
+
+What to watch for in the colored output:
+
+- `RUNNING AGENT: data_agent` always prints before `RUNNING AGENT:
+  viz_agent`, no matter how you word the prompt - that's the
+  topological sort deciding the order, not the LLM.
+- Re-prompt with the order intentionally inverted ("place a tile, then
+  fetch the data") - the order on screen stays the same. Dependency
+  edges trump prompt phrasing.
+- The cycle-detection demo stays heredoc-only; the CLI never builds a
+  cycle on its own.
+
 ## Quick reference
 
 | Concept | File | Lines |

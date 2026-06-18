@@ -99,6 +99,70 @@ This was a real workshop-debug-day bug.
 | You drive the loop yourself | The library drives ordering |
 | No dependency graph | You want `>>` for data flow |
 
+## Try it (3 min)
+
+Wire two agents with `>>` and watch the `<context>` block fill in.
+
+```bash
+docker compose exec tethysdash python - <<'PY'
+from tethys_agents.agent import Agent
+from tethys_agents.discover import discover
+
+tools = discover(["geoglows_summit_example"])
+
+finder = Agent(
+    name="finder",
+    backstory="You locate GEOGloWS rivers.",
+    task_description="Find the river_id nearest to lat=6.25, lon=-75.56.",
+    task_expected_output="Just the river_id on its own line.",
+    tools=tools,
+    llm="qwen3:8b",
+)
+reporter = Agent(
+    name="reporter",
+    backstory="You summarize hydrology results in one sentence.",
+    task_description="Using the upstream finder's result, fetch the forecast and summarize the peak.",
+    task_expected_output="One sentence with the peak flow.",
+    tools=tools,
+    llm="qwen3:8b",
+)
+
+finder >> reporter         # dependency edge - finder runs first
+
+finder.run()               # output is auto-piped to reporter.context
+print("\n--- reporter.context (what reporter will see) ---")
+print(reporter.context)
+PY
+```
+
+What to look for:
+
+- `reporter.context` contains `finder`'s output verbatim, wrapped in a
+  `<finder>` tag - that's exactly what will land in reporter's
+  `<context>` block on its next `run()`.
+- If you call `finder.run()` a second time, reporter's context **grows**
+  rather than resetting (Misconception #4). Call `reporter.reset()` to
+  clear it.
+
+### Or test it end-to-end via the chat CLI
+
+```bash
+docker compose exec tethysdash tethysdash chat --user admin --runner multi
+```
+
+Then type:
+
+> Find the river near (6.25, -75.56), then summarize its forecast in one sentence.
+
+What to watch for in the colored output:
+
+- The banner prints `RUNNING AGENT: data_agent`, you see data_agent's
+  tool calls run, then `RUNNING AGENT: viz_agent` - that's the `>>`
+  edge firing the dependency order.
+- viz_agent gets data_agent's output via the `<context>` block; the CLI
+  doesn't print the block, but the heredoc above shows exactly what's
+  inside.
+
 ## Quick reference
 
 | Concept | File | Lines |
